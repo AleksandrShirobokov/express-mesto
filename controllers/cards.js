@@ -14,14 +14,14 @@ module.exports.createCard = (req, res) => {
 
 module.exports.getCards = (req, res) => {
   Card.find({})
-  .then((cards) => res.send({ data: cards }))
+  .then((cards) => res.status(200).send({ data: cards }))
   .catch(() => res.status(500).send({ message: ERROR_500_DEFAULT }));
 }
 
 module.exports.createCard = (req, res) => {
   const { name, link } = req.body;
   Card.create({ name, link, owner: req.user._id })
-  .then((card) => res.send({ data: card }))
+  .then((card) => res.status(200).send({ data: card }))
   .catch((err) => {
     if(err.name === 'ValidationError') {
       res.status(400).send({ message: ERROR_400_CREATE_CARD });
@@ -32,17 +32,16 @@ module.exports.createCard = (req, res) => {
 
 module.exports.deleteCard = (req, res) => {
   Card.findByIdAndRemove(req.params.cardId)
+  .orFail(new Error('NotValidId'))
   .then((card) => {
-    if(!card === null) {
-      res.send({ data: null })
-    }
-    res.send({ data: card })
+    res.status(200).send({ data: card })
   })
   .catch((err) => {
-    if(err.name === 'CastError') {
+    if(err.name === 'NotValidId') {
       res.status(404).send({ message: ERROR_404_ID_CARD });
-    }
+    } else {
       res.status(500).send({ message: ERROR_500_DEFAULT });
+    }
   });
 }
 
@@ -51,13 +50,13 @@ module.exports.likeCard = (req, res) => {
     { $addToSet: { likes: req.user._id } },
     { new: true },
     )
-  .then((card) => res.send({ data: card }))
+  .then((card) => res.status(200).send({ data: card }))
   .catch((err) => {
     if(err.name === 'ValidationError') {
-      res.status(400).send({ message: ERROR_400_PUT_LIKE });
+      res.status(404).send({ message: ERROR_400_PUT_LIKE });
     }
     if(err.name === 'CastError') {
-      res.status(404).send({ message: 'Невалидный id' });
+      res.status(400).send({ message: 'Невалидный id' });
     }
       res.status(500).send({ message: ERROR_500_DEFAULT });
   })
@@ -68,13 +67,13 @@ module.exports.dislikeCard = (req, res) => {
     { $pull: { likes: req.user._id } },
     { new: true },
     )
-  .then((card) => res.send({ data: card }))
+  .then((card) => res.status(200).send({ data: card }))
   .catch((err) => {
     if(err.name === 'ValidationError') {
-       res.status(400).send({ message: ERROR_400_DELETE_LIKE });
+       res.status(404).send({ message: ERROR_400_DELETE_LIKE });
     }
     if(err.name === 'CastError') {
-      res.status(404).send({ message: 'Невалидный id' });
+      res.status(400).send({ message: 'Невалидный id' });
     }
       res.status(500).send({ message: ERROR_500_DEFAULT });
   })
