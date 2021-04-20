@@ -1,11 +1,9 @@
 const User = require('../models/users');
 
 const {
-  ERROR_400_UPDATE_AVATAR,
-  ERROR_400_UPDATE_USER,
   ERROR_500_DEFAULT,
   ERROR_404_ID_USER,
-  ERROR_400_USER,
+  ERROR_400_CAST_ERROR,
 } = require('../utils/errors');
 
 module.exports.getUsers = (req, res) => {
@@ -23,6 +21,8 @@ module.exports.getUserById = (req, res) => {
     .catch((err) => {
       if (err.name === 'NotValidId') {
         res.status(404).send({ message: ERROR_404_ID_USER });
+      } else if (err.name === 'CastError') {
+        res.status(400).send({ message: ERROR_400_CAST_ERROR });
       } else {
         res.status(500).send({ message: ERROR_500_DEFAULT });
       }
@@ -35,7 +35,7 @@ module.exports.createUser = (req, res) => {
     .then((user) => res.status(200).send({ data: user }))
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(400).send({ message: ERROR_400_USER });
+        res.status(400).send({ message: ERROR_400_CAST_ERROR });
       } else {
         res.status(500).send({ message: ERROR_500_DEFAULT });
       }
@@ -48,12 +48,12 @@ module.exports.patchUser = (req, res) => {
     .then((user) => res.status(200).send({ data: user }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(404).send({ message: ERROR_400_UPDATE_USER });
+        res.status(404).send({ message: ERROR_404_ID_USER });
+      } else if (err.name === 'CastError') {
+        res.status(400).send({ message: ERROR_400_CAST_ERROR });
+      } else {
+        res.status(500).send({ message: ERROR_500_DEFAULT });
       }
-      if (err.name === 'CastError') {
-        res.status(400).send({ message: ERROR_404_ID_USER });
-      }
-      res.status(500).send({ message: ERROR_500_DEFAULT });
     });
 };
 
@@ -63,11 +63,11 @@ module.exports.patchAvatar = (req, res) => {
     .then((user) => res.status(200).send({ data: user }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(404).send({ message: ERROR_400_UPDATE_AVATAR });
+        res.status(404).send({ message: ERROR_404_ID_USER });
+      } else if (err.name === 'CastError') {
+        res.status(400).send({ message: ERROR_400_CAST_ERROR });
+      } else {
+        res.status(500).send({ message: ERROR_500_DEFAULT });
       }
-      if (err.name === 'CastError') {
-        res.status(400).send({ message: ERROR_404_ID_USER });
-      }
-      res.status(500).send({ message: ERROR_500_DEFAULT });
     });
 };

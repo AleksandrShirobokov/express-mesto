@@ -1,11 +1,9 @@
 const Card = require('../models/cards');
 
 const {
-  ERROR_400_CREATE_CARD,
-  ERROR_400_DELETE_LIKE,
-  ERROR_400_PUT_LIKE,
   ERROR_500_DEFAULT,
   ERROR_404_ID_CARD,
+  ERROR_400_CAST_ERROR,
 } = require('../utils/errors');
 
 module.exports.createCard = (req) => {
@@ -24,10 +22,11 @@ module.exports.createCard = (req, res) => {
   Card.create({ name, link, owner: req.user._id })
     .then((card) => res.status(200).send({ data: card }))
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        res.status(400).send({ message: ERROR_400_CREATE_CARD });
+      if (err.name === 'CastError') {
+        res.status(400).send({ message: ERROR_400_CAST_ERROR });
+      } else {
+        res.status(500).send({ message: ERROR_500_DEFAULT });
       }
-      res.status(500).send({ message: ERROR_500_DEFAULT });
     });
 };
 
@@ -40,6 +39,8 @@ module.exports.deleteCard = (req, res) => {
     .catch((err) => {
       if (err.name === 'NotValidId') {
         res.status(404).send({ message: ERROR_404_ID_CARD });
+      } else if (err.name === 'CastError') {
+        res.status(400).send({ message: ERROR_400_CAST_ERROR });
       } else {
         res.status(500).send({ message: ERROR_500_DEFAULT });
       }
@@ -53,12 +54,12 @@ module.exports.likeCard = (req, res) => {
     .then((card) => res.status(200).send({ data: card }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(404).send({ message: ERROR_400_PUT_LIKE });
+        res.status(404).send({ message: ERROR_404_ID_CARD });
+      } else if (err.name === 'CastError') {
+        res.status(400).send({ message: ERROR_400_CAST_ERROR });
+      } else {
+        res.status(500).send({ message: ERROR_500_DEFAULT });
       }
-      if (err.name === 'CastError') {
-        res.status(400).send({ message: 'Невалидный id' });
-      }
-      res.status(500).send({ message: ERROR_500_DEFAULT });
     });
 };
 
@@ -69,11 +70,11 @@ module.exports.dislikeCard = (req, res) => {
     .then((card) => res.status(200).send({ data: card }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(404).send({ message: ERROR_400_DELETE_LIKE });
+        res.status(404).send({ message: ERROR_404_ID_CARD });
+      } else if (err.name === 'CastError') {
+        res.status(400).send({ message: ERROR_400_CAST_ERROR });
+      } else {
+        res.status(500).send({ message: ERROR_500_DEFAULT });
       }
-      if (err.name === 'CastError') {
-        res.status(400).send({ message: 'Невалидный id' });
-      }
-      res.status(500).send({ message: ERROR_500_DEFAULT });
     });
 };
