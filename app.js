@@ -1,6 +1,9 @@
 const express = require('express');
+
 const { PORT = 3000 } = process.env;
+
 const mongoose = require('mongoose');
+
 const app = express();
 
 app.use(express.json());
@@ -12,9 +15,6 @@ mongoose.connect('mongodb://localhost:27017/mestodb', {
   useFindAndModify: false,
 });
 
-app.use('/users', require('./routes/users'));
-app.use('/cards', require('./routes/cards'));
-
 app.use((req, res, next) => {
   req.user = {
     _id: '607a9d4919b8912fe49b9d06',
@@ -23,6 +23,10 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use('/users', require('./routes/users'));
+app.use('/cards', require('./routes/cards'));
+
 app.listen(PORT, () => {
+  // eslint-disable-next-line no-console
   console.log(`Приложение запущено: порт ${PORT}`);
-})
+});
