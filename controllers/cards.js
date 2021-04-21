@@ -37,7 +37,7 @@ module.exports.deleteCard = (req, res) => {
       res.status(200).send({ message: 'Карточка удалена' });
     })
     .catch((err) => {
-      if (err.name === 'NotValidId') {
+      if (err.message === 'NotValidId') {
         res.status(404).send({ message: ERROR_404_ID_CARD });
       } else if (err.name === 'CastError') {
         res.status(400).send({ message: ERROR_400_CAST_ERROR });
@@ -51,9 +51,10 @@ module.exports.likeCard = (req, res) => {
   Card.findByIdAndUpdate(req.params.cardId,
     { $addToSet: { likes: req.user._id } },
     { new: true })
+    .orFail(new Error('NotValidId'))
     .then((card) => res.status(200).send({ data: card }))
     .catch((err) => {
-      if (err.name === 'ValidationError') {
+      if (err.message === 'NotValidId') {
         res.status(404).send({ message: ERROR_404_ID_CARD });
       } else if (err.name === 'CastError') {
         res.status(400).send({ message: ERROR_400_CAST_ERROR });
@@ -67,9 +68,10 @@ module.exports.dislikeCard = (req, res) => {
   Card.findByIdAndUpdate(req.params.cardId,
     { $pull: { likes: req.user._id } },
     { new: true })
+    .orFail(new Error('NotValidId'))
     .then((card) => res.status(200).send({ data: card }))
     .catch((err) => {
-      if (err.name === 'ValidationError') {
+      if (err.message === 'NotValidId') {
         res.status(404).send({ message: ERROR_404_ID_CARD });
       } else if (err.name === 'CastError') {
         res.status(400).send({ message: ERROR_400_CAST_ERROR });

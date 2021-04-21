@@ -19,7 +19,7 @@ module.exports.getUserById = (req, res) => {
     .orFail(new Error('NotValidId'))
     .then((user) => res.status(200).send({ data: user }))
     .catch((err) => {
-      if (err.name === 'NotValidId') {
+      if (err.message === 'NotValidId') {
         res.status(404).send({ message: ERROR_404_ID_USER });
       } else if (err.name === 'CastError') {
         res.status(400).send({ message: ERROR_400_CAST_ERROR });
