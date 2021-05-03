@@ -1,82 +1,66 @@
 const Card = require('../models/cards');
 
-const {
-  ERROR_500_DEFAULT,
-  ERROR_404_ID_CARD,
-  ERROR_400_CAST_ERROR,
-} = require('../utils/errors');
+const BadRequestError = require('../errors/BadRequestError');
+const ForbiddenError = require('../errors/ForbiddenError');
+const NotFoundError = require('../errors/NotFoundError');
 
 module.exports.createCard = (req) => {
   // eslint-disable-next-line no-console
   console.log(req.user._id);
 };
 
-module.exports.getCards = (req, res) => {
+module.exports.getCards = (req, res, next) => {
   Card.find({})
     .then((cards) => res.status(200).send({ data: cards }))
-    .catch(() => res.status(500).send({ message: ERROR_500_DEFAULT }));
+    .catch(next);
 };
 
-module.exports.createCard = (req, res) => {
+module.exports.createCard = (req, res, next) => {
   const { name, link } = req.body;
   Card.create({ name, link, owner: req.user._id })
     .then((card) => res.status(200).send({ data: card }))
     .catch((err) => {
-      if (err.name === 'CastError') {
-        res.status(400).send({ message: ERROR_400_CAST_ERROR });
-      } else {
-        res.status(500).send({ message: ERROR_500_DEFAULT });
-      }
-    });
+      throw new BadRequestError(err.message);
+    })
+    .catch(next);
 };
 
-module.exports.deleteCard = (req, res) => {
-  Card.findByIdAndRemove(req.params.cardId)
+module.exports.deleteCard = (req, res, next) => {
+  Card.findById(req.params.cardId)
     .orFail(new Error('NotValidId'))
-    .then(() => {
-      res.status(200).send({ message: 'Карточка удалена' });
+    .then((data) => {
+      if (data.owner.toString() !== req.user._id) {
+        throw new ForbiddenError('У вас нет прав для удаления чужой карточки');
+      }
+      Card.findByIdAndRemove(req.params.cardId)
+        .then((card) => res.status(200).send(card))
+        .catch(next);
     })
     .catch((err) => {
-      if (err.message === 'NotValidId') {
-        res.status(404).send({ message: ERROR_404_ID_CARD });
-      } else if (err.name === 'CastError') {
-        res.status(400).send({ message: ERROR_400_CAST_ERROR });
-      } else {
-        res.status(500).send({ message: ERROR_500_DEFAULT });
-      }
+      throw new NotFoundError(err.message);
     });
 };
 
-module.exports.likeCard = (req, res) => {
+module.exports.likeCard = (req, res, next) => {
   Card.findByIdAndUpdate(req.params.cardId,
     { $addToSet: { likes: req.user._id } },
     { new: true })
-    .orFail(new Error('NotValidId'))
+    .orFail(new Error('Карточка не найдена'))
     .then((card) => res.status(200).send({ data: card }))
     .catch((err) => {
-      if (err.message === 'NotValidId') {
-        res.status(404).send({ message: ERROR_404_ID_CARD });
-      } else if (err.name === 'CastError') {
-        res.status(400).send({ message: ERROR_400_CAST_ERROR });
-      } else {
-        res.status(500).send({ message: ERROR_500_DEFAULT });
-      }
-    });
+      throw new NotFoundError(err.message);
+    })
+    .catch(next);
 };
 
-module.exports.dislikeCard = (req, res) => {
+module.exports.dislikeCard = (req, res, next) => {
   Card.findByIdAndUpdate(req.params.cardId,
     { $pull: { likes: req.user._id } },
     { new: true })
-    .orFail(new Error('NotValidId'))
+    .orFail(new Error('Карточка не найдена'))
     .then((card) => res.status(200).send({ data: card }))
     .catch((err) => {
-      if (err.message === 'NotValidId') {
-        res.status(404).send({ message: ERROR_404_ID_CARD });
-      } else if (err.name === 'CastError') {
-        res.status(400).send({ message: ERROR_400_CAST_ERROR });
-      } else {
-        res.status(500).send({ message: ERROR_500_DEFAULT });
-      }
-    });
+      throw new NotFoundError(err.message);
+    })
+    .catch(next);
 };
