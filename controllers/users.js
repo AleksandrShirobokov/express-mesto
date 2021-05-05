@@ -5,11 +5,7 @@ const User = require('../models/users');
 const BadRequestError = require('../errors/BadRequestError');
 const ConflictError = require('../errors/ConflictError');
 const NotFoundError = require('../errors/NotFoundError');
-
-const {
-  ERROR_404_ID_USER,
-  ERROR_400_CAST_ERROR,
-} = require('../utils/errors');
+const UnauthorizedError = require('../errors/UnauthorizedError');
 
 module.exports.getUsers = (req, res, next) => {
   User.find({})
@@ -20,7 +16,7 @@ module.exports.getUsers = (req, res, next) => {
 module.exports.getCurrentUser = (req, res, next) => {
   User.findById(req.user._id)
     .orFail(new Error('Запрашиваемый пользователь не найден'))
-    .then((user) => res.status(200).send(user))
+    .then((user) => res.status(200).send({ data: user }))
     .catch((err) => {
       throw new NotFoundError(err.message);
     })
@@ -29,10 +25,10 @@ module.exports.getCurrentUser = (req, res, next) => {
 
 module.exports.getUserById = (req, res, next) => {
   User.findById(req.params.userId)
-    .orFail(new Error('NotValidId'))
+    .orFail(new Error('Запрашиваемый пользователь не найден'))
     .then((user) => res.status(200).send({ data: user }))
-    .catch(() => {
-      throw new NotFoundError({ message: ERROR_404_ID_USER });
+    .catch((err) => {
+      throw new NotFoundError(err.message);
     })
     .catch(next);
 };
@@ -72,12 +68,13 @@ module.exports.patchUser = (req, res, next) => {
     { name, about },
     { new: true, runValidation: true },
   )
+    .orFail(new Error('Запрашиваемый пользователь не найден'))
     .then((user) => res.status(200).send({ data: user }))
     .catch((err) => {
-      if (err.message === 'NotValidId') {
-        throw new NotFoundError({ message: ERROR_404_ID_USER });
+      if (err.message === 'Запрашиваемый пользователь не найден' || err.name === 'Невалидный id') {
+        throw new NotFoundError(err.message);
       } else if (err.name === 'CastError') {
-        throw new BadRequestError({ message: ERROR_400_CAST_ERROR });
+        throw new BadRequestError(err.message);
       }
     })
     .catch(next);
@@ -86,27 +83,29 @@ module.exports.patchUser = (req, res, next) => {
 module.exports.patchAvatar = (req, res, next) => {
   const { avatar } = req.body;
   User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidation: true })
+    .orFail(new Error('Запрашиваемый пользователь не найден'))
     .then((user) => res.status(200).send({ data: user }))
     .catch((err) => {
-      if (err.message === 'NotValidId') {
-        throw new NotFoundError({ message: ERROR_404_ID_USER });
+      if (err.message === 'Запрашиваемый пользователь не найден' || err.name === 'Невалидный id') {
+        throw new NotFoundError(err.message);
       } else if (err.name === 'CastError') {
-        throw new BadRequestError({ message: ERROR_400_CAST_ERROR });
+        throw new BadRequestError(err.message);
       }
     })
     .catch(next);
 };
 
-module.exports.login = (req, res) => {
+module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
-  return User.findUserByCredentials({ email, password })
+  return User.findUserByCredentials(email, password)
     .then((user) => {
       const token = jwt.sign({ _id: user._id },
         'key',
         { expiresIn: '7d' });
-      res.send({ token });
+      res.status(200).send({ token });
     })
     .catch((err) => {
-      res.status(401).send({ message: err.message });
-    });
+      throw new UnauthorizedError(err.message);
+    })
+    .catch(next);
 };

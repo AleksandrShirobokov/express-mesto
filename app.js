@@ -1,19 +1,24 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const cookieParser = require('cookie-parser');
 const { errors } = require('celebrate');
 const helmet = require('helmet');
-const auth = require('./middlewares/auth');
+const NotFoundError = require('./errors/NotFoundError');
 
 const { PORT = 3000 } = process.env;
 
 const { login, createUser } = require('./controllers/users');
-const NotFoundError = require('./errors/NotFoundError');
-const { loginValidation, userInfoValidation } = require('./middlewares/validationCheck');
+const { loginValidation, registrValidation } = require('./middlewares/validationCheck');
+const auth = require('./middlewares/auth');
 
 const app = express();
 
+app.use(cookieParser());
+app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.disable('x-powered-by');
 
 mongoose.connect('mongodb://localhost:27017/mestodb', {
   useNewUrlParser: true,
@@ -23,19 +28,16 @@ mongoose.connect('mongodb://localhost:27017/mestodb', {
 });
 
 app.post('/signin', loginValidation, login);
-app.post('/signup', userInfoValidation, createUser);
+app.post('/signup', registrValidation, createUser);
 
 app.use('/users', auth, require('./routes/users'));
 app.use('/cards', auth, require('./routes/cards'));
 
-app.use(helmet());
-app.disable('x-powered-by');
-
-app.use(errors());
-
 app.use('*', () => {
   throw new NotFoundError('Запрашиваемый ресурс не найден');
 });
+
+app.use(errors());
 
 app.use((err, req, res, next) => {
   const { statusCode = 500, message } = err;

@@ -27,18 +27,18 @@ module.exports.createCard = (req, res, next) => {
 
 module.exports.deleteCard = (req, res, next) => {
   Card.findById(req.params.cardId)
-    .orFail(new Error('NotValidId'))
     .then((data) => {
+      if (!data) {
+        throw new NotFoundError('Карточка не найдена');
+      }
       if (data.owner.toString() !== req.user._id) {
         throw new ForbiddenError('У вас нет прав для удаления чужой карточки');
       }
       Card.findByIdAndRemove(req.params.cardId)
-        .then((card) => res.status(200).send(card))
+        .then((card) => res.status(200).send({ card }))
         .catch(next);
     })
-    .catch((err) => {
-      throw new NotFoundError(err.message);
-    });
+    .catch(next);
 };
 
 module.exports.likeCard = (req, res, next) => {
