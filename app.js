@@ -40,9 +40,8 @@ app.use('*', () => {
 app.use(errors());
 
 app.use((err, req, res, next) => {
-  const { statusCode = 500, message } = err;
-  res.status(err.statusCode).send({ message: statusCode === 500 ? 'Что-то пошло не так' : message });
-
+  const statusCode = err.status || 500;
+  res.status(statusCode).send({ message: err.message });
   next();
 });
 
