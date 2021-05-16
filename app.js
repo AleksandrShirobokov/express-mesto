@@ -3,16 +3,22 @@ const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
 const { errors } = require('celebrate');
 const helmet = require('helmet');
+const cors = require('cors');
 const NotFoundError = require('./errors/NotFoundError');
 
 const { PORT = 3000 } = process.env;
 
+const { requestLogger, errorLogger } = require('./middlewares/logger');
 const { login, createUser } = require('./controllers/users');
 const { loginValidation, registrValidation } = require('./middlewares/validationCheck');
 const auth = require('./middlewares/auth');
 
 const app = express();
 
+app.use(cors({
+  origin: 'http://krasavchik.students.nomoredomains.icu',
+  credentials: true,
+}));
 app.use(cookieParser());
 app.use(helmet());
 app.use(express.json());
@@ -27,11 +33,15 @@ mongoose.connect('mongodb://localhost:27017/mestodb', {
   useUnifiedTopology: true,
 });
 
+app.use(requestLogger);
+
 app.post('/signin', loginValidation, login);
 app.post('/signup', registrValidation, createUser);
 
 app.use('/users', auth, require('./routes/users'));
 app.use('/cards', auth, require('./routes/cards'));
+
+app.use(errorLogger);
 
 app.use('*', () => {
   throw new NotFoundError('Запрашиваемый ресурс не найден');
