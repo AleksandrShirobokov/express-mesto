@@ -13,12 +13,13 @@ const { login, createUser } = require('./controllers/users');
 const { loginValidation, registrValidation } = require('./middlewares/validationCheck');
 const auth = require('./middlewares/auth');
 
-const app = express();
-
+// eslint-disable-next-line no-use-before-define
 app.use(cors({
   origin: 'http://krasavchik.students.nomoredomains.icu',
   credentials: true,
 }));
+const app = express();
+
 app.use(cookieParser());
 app.use(helmet());
 app.use(express.json());
